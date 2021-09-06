@@ -42,11 +42,51 @@ def draw_grid(n, grid):
     cell_surf.fill(DARK)
 
     for x in range(n):
-        for y in range (n):
-            if grid[y][x].current_state == ALIVE:
+        for y in range(n):
+            if grid[x][y].current_state == ALIVE:
                 surf.blit(cell_surf, (dx + x*cell_width, dy + y*cell_width))
 
     return surf
+
+
+def zoom_out(n, grid):
+    """
+    Zoom out by increasing the size of the grid: n -> n+2
+    """
+
+    if n < MAX_SIZE_GRID:
+        # Add lines on the top and bottom
+        grid.insert(0, [Cell(DEAD, DEAD) for x in range(n)])
+        grid.append([Cell(DEAD, DEAD) for x in range(n)])
+
+        # Add colums on the left and right
+        for y in range(len(grid)):
+            grid[y].insert(0, Cell(DEAD, DEAD))
+            grid[y].append(Cell(DEAD, DEAD))
+
+        # The new grid is now of size n+2 * n+2
+        n += 2
+
+    return n, grid
+
+
+def zoom_in(n, grid):
+    """
+    Zoom in by decreasing the size of the grid: n -> n-2
+    """
+
+    if n > MIN_SIZE_GRID:
+        # Remove the leftmost and rightmost colums
+        for y in range(n):
+            grid[y] = grid[y][1:-1]
+
+        # Remove the top and bottom lines
+        grid = grid[1:-1]
+
+        # The new grid is now of size n-2 * n-2
+        n -= 2
+
+    return n, grid
 
 ###############################################################################
 ############################### GLOBAL VARIABLES ##############################
@@ -57,13 +97,13 @@ DARK = (0, 0, 0)
 WHITE = (255, 255, 255)
 WIDTH, HEIGHT = 0, 1
 DEAD, ALIVE = 0, 1
+SCROLL_DOWN, SCROLL_UP = -1, 1
+MIN_SIZE_GRID, MAX_SIZE_GRID = 3, 101
 FPS = 100
 
 nb_cells = 25
 grid = [[Cell(DEAD, DEAD) for x in range(nb_cells)] for y in range(nb_cells)]
-grid[0][4].current_state = ALIVE
-grid[4][0].current_state = ALIVE
-grid[4][4].current_state = ALIVE
+grid[12][12].current_state = ALIVE
 active_game = True
 
 ###############################################################################
@@ -88,6 +128,14 @@ while active_game:
     for event in pygame.event.get():
         if event.type == QUIT:
             active_game = False
+        elif event.type == MOUSEWHEEL:
+            if event.y == SCROLL_UP:
+                nb_cells, grid = zoom_in(nb_cells, grid)
+            elif event.y == SCROLL_DOWN:
+                nb_cells, grid = zoom_out(nb_cells, grid)
+            
+            surface = draw_grid(nb_cells, grid)
+            window.blit(surface, (0, 0))
 
     pygame.display.flip()
 
