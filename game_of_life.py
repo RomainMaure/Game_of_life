@@ -2,9 +2,9 @@
 ################################# IMPORTS #####################################
 ###############################################################################
 
+import numpy as np
 import pygame
 from pygame.locals import *
-
 from cell import Cell
 
 ###############################################################################
@@ -48,45 +48,39 @@ def draw_grid(n, grid):
 
     return surf
 
-
-def zoom_out(n, grid):
+def update_step(grid):
     """
-    Zoom out by increasing the size of the grid: n -> n+2
-    """
-
-    if n < MAX_SIZE_GRID:
-        # Add lines on the top and bottom
-        grid.insert(0, [Cell(DEAD, DEAD) for x in range(n)])
-        grid.append([Cell(DEAD, DEAD) for x in range(n)])
-
-        # Add colums on the left and right
-        for y in range(len(grid)):
-            grid[y].insert(0, Cell(DEAD, DEAD))
-            grid[y].append(Cell(DEAD, DEAD))
-
-        # The new grid is now of size n+2 * n+2
-        n += 2
-
-    return n, grid
-
-
-def zoom_in(n, grid):
-    """
-    Zoom in by decreasing the size of the grid: n -> n-2
+    Compute an iteration of the game of life
     """
 
-    if n > MIN_SIZE_GRID:
-        # Remove the leftmost and rightmost colums
-        for y in range(n):
-            grid[y] = grid[y][1:-1]
+    # For all the cells of the grid
+    for l in range(MAX_SIZE_GRID):
+        for c in range(MAX_SIZE_GRID):
+            nb_neighbors = 0
+            current_cell = grid[l][c]
 
-        # Remove the top and bottom lines
-        grid = grid[1:-1]
+            # Count the number of neighbors
+            for neighbor_x, neighbor_y in NEIGHBORS:
+                if 0 <= l+neighbor_y < MAX_SIZE_GRID and 0 <= c+neighbor_x < MAX_SIZE_GRID:
+                    neighbor = grid[l+neighbor_y][c+neighbor_x]
+                    if neighbor.current_state == ALIVE:
+                        nb_neighbors += 1
 
-        # The new grid is now of size n-2 * n-2
-        n -= 2
+            # Apply the game of life's rules
+            if current_cell.current_state == ALIVE:
+                if nb_neighbors < UNDERPOPULATION or nb_neighbors > OVERPOPULATION:
+                    current_cell.next_state = DEAD
+                else:
+                    current_cell.next_state = ALIVE
+            elif nb_neighbors == REPRODUCTION:
+                current_cell.next_state = ALIVE
 
-    return n, grid
+    # Apply the update state
+    for line in grid:
+        for cell in line:
+            cell.current_state = cell.next_state
+
+    return grid
 
 ###############################################################################
 ############################### GLOBAL VARIABLES ##############################
@@ -99,12 +93,19 @@ WIDTH, HEIGHT = 0, 1
 DEAD, ALIVE = 0, 1
 SCROLL_DOWN, SCROLL_UP = -1, 1
 MIN_SIZE_GRID, MAX_SIZE_GRID = 3, 101
+MID_SIZE_GRID = MAX_SIZE_GRID // 2
+NEIGHBORS = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1)]
+UNDERPOPULATION, OVERPOPULATION, REPRODUCTION = 2, 3, 3
+UPDATE_TIME = 500
 FPS = 100
 
 nb_cells = 25
-grid = [[Cell(DEAD, DEAD) for x in range(nb_cells)] for y in range(nb_cells)]
-grid[12][12].current_state = ALIVE
+grid = np.array([[Cell(DEAD, DEAD) for x in range(MAX_SIZE_GRID)] for y in range(MAX_SIZE_GRID)])
+grid[72][72].current_state = ALIVE
+grid[72][73].current_state = ALIVE
+grid[72][74].current_state = ALIVE
 active_game = True
+time = 0
 
 ###############################################################################
 ################################## MAIN #######################################
@@ -116,7 +117,7 @@ window = pygame.display.set_mode(DIMENSIONS)
 pygame.display.set_caption("Game of life")
 
 
-surface = draw_grid(nb_cells, grid)
+surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1, MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1])
 window.blit(surface, (0, 0))
 
 clock = pygame.time.Clock()
@@ -129,13 +130,20 @@ while active_game:
         if event.type == QUIT:
             active_game = False
         elif event.type == MOUSEWHEEL:
-            if event.y == SCROLL_UP:
-                nb_cells, grid = zoom_in(nb_cells, grid)
-            elif event.y == SCROLL_DOWN:
-                nb_cells, grid = zoom_out(nb_cells, grid)
-            
-            surface = draw_grid(nb_cells, grid)
-            window.blit(surface, (0, 0))
+            if event.y == SCROLL_UP and nb_cells > MIN_SIZE_GRID:
+                nb_cells -= 2
+            elif event.y == SCROLL_DOWN and nb_cells < MAX_SIZE_GRID:
+                nb_cells += 2
+
+    time += clock.get_time()
+    if time > UPDATE_TIME:
+        time = 0
+        grid = update_step(grid)
+
+    nb_cells_to_show = nb_cells//2
+
+    surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1, MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1])
+    window.blit(surface, (0, 0))
 
     pygame.display.flip()
 
