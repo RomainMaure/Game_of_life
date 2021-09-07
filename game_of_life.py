@@ -17,17 +17,17 @@ def draw_grid(n, grid):
     """
 
     # White background
-    surf = pygame.Surface(DIMENSIONS)
+    surf = pygame.Surface(GRID_DIMENSIONS)
     surf.fill(WHITE)
     
     # Grid
-    if DIMENSIONS[WIDTH] < DIMENSIONS[HEIGHT]:
-        cell_width = DIMENSIONS[WIDTH] // n
+    if GRID_DIMENSIONS[WIDTH] < GRID_DIMENSIONS[HEIGHT]:
+        cell_width = GRID_DIMENSIONS[WIDTH] // n
     else:
-        cell_width = DIMENSIONS[HEIGHT] // n
+        cell_width = GRID_DIMENSIONS[HEIGHT] // n
 
-    dx = (DIMENSIONS[WIDTH] - n*cell_width) // 2
-    dy = (DIMENSIONS[HEIGHT] - n*cell_width) // 2
+    dx = (GRID_DIMENSIONS[WIDTH] - n*cell_width) // 2
+    dy = (GRID_DIMENSIONS[HEIGHT] - n*cell_width) // 2
 
     for pixel_x in range(dx + cell_width, dx + n*cell_width, cell_width):
         for pixel_y in range(dy, dy + n*cell_width):
@@ -47,6 +47,73 @@ def draw_grid(n, grid):
                 surf.blit(cell_surf, (dx + x*cell_width, dy + y*cell_width))
 
     return surf
+
+
+def draw_rounded_rectangle(width, height, color, radius):
+    """
+    Draw a rounded rectangle
+    """
+
+    surf = pygame.Surface((width, height), SRCALPHA)
+
+    r = Rect(0, 0, width, height)
+    pygame.draw.rect(surf, color, r, border_radius = radius)
+
+    return surf
+
+
+def play_symbol():
+    """
+    Draw a play symbol
+    """
+
+    surf = pygame.Surface(PLAY_PAUSE_SYMBOL_DIMENSIONS)
+    surf.fill(WHITE)
+    pygame.draw.polygon(surf, GREY, [[0, 0], [0, 70], [70, 35]])
+
+    return surf
+
+
+def pause_symbol():
+    """
+    Draw a pause symbol
+    """
+
+    # Draw a vertical line
+    line_surf = draw_rounded_rectangle(20, 70, GREY, 10)
+
+    # Create the pause symbol with two vertical lines
+    surf = pygame.Surface(PLAY_PAUSE_SYMBOL_DIMENSIONS)
+    surf.fill(WHITE)
+    surf.blit(line_surf, (0, 0))
+    surf.blit(line_surf, (50, 0))
+
+    return surf
+
+
+def draw_side_panel(symbol):
+    """
+    Draw the control panel
+    """
+
+    # White background
+    surf = pygame.Surface(PANEL_DIMENSIONS)
+    surf.fill(WHITE)
+
+    # Play / Pause symbol
+    if symbol == PLAY:
+        surf.blit(play_symbol(), (175, 35))
+    elif symbol == PAUSE:
+        surf.blit(pause_symbol(), (175, 35))
+
+    # Step button
+    surf.blit(draw_rounded_rectangle(140, 70, GREY, 10), (560, 35))
+    fnt = pygame.font.Font(None, 70, bold=True)
+    text = fnt.render("step", True, WHITE)
+    surf.blit(text, (580, 45))
+
+    return surf
+
 
 def update_step(grid):
     """
@@ -86,8 +153,12 @@ def update_step(grid):
 ############################### GLOBAL VARIABLES ##############################
 ###############################################################################
 
-DIMENSIONS = (640, 640)
+GRID_DIMENSIONS = (840, 840)
+PANEL_DIMENSIONS = (840, 140)
+PLAY_PAUSE_SYMBOL_DIMENSIONS = (70, 70)
+DIMENSIONS = (840, 980)
 DARK = (0, 0, 0)
+GREY = (127, 127, 127)
 WHITE = (255, 255, 255)
 WIDTH, HEIGHT = 0, 1
 DEAD, ALIVE = 0, 1
@@ -97,6 +168,7 @@ MID_SIZE_GRID = MAX_SIZE_GRID // 2
 NEIGHBORS = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1)]
 UNDERPOPULATION, OVERPOPULATION, REPRODUCTION = 2, 3, 3
 UPDATE_TIME = 500
+PLAY, PAUSE = 0, 1
 FPS = 100
 
 nb_cells = 25
@@ -118,7 +190,9 @@ pygame.display.set_caption("Game of life")
 
 
 surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1, MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1])
+panel = draw_side_panel(PLAY)
 window.blit(surface, (0, 0))
+window.blit(panel, (0, 840))
 
 clock = pygame.time.Clock()
 
