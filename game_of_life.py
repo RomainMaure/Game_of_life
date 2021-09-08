@@ -91,7 +91,7 @@ def pause_symbol():
     return surf
 
 
-def draw_side_panel(pause):
+def draw_side_panel(pause, step_clicked):
     """
     Draw the control panel
     """
@@ -107,10 +107,16 @@ def draw_side_panel(pause):
         surf.blit(pause_symbol(), (175, 35))
 
     # Step button
-    surf.blit(draw_rounded_rectangle(140, 70, GREY, 10), (560, 35))
     fnt = pygame.font.Font(None, 70, bold=True)
     text = fnt.render("step", True, WHITE)
-    surf.blit(text, (580, 45))
+
+    if step_clicked:
+        surf.blit(draw_rounded_rectangle(140, 70, GREY, 10), (562, 37))
+        surf.blit(text, (582, 47))
+    else:
+        surf.blit(draw_rounded_rectangle(140, 70, DARK, 10), (562, 37))
+        surf.blit(draw_rounded_rectangle(140, 70, GREY, 10), (557, 32))
+        surf.blit(text, (577, 42))
 
     return surf
 
@@ -179,6 +185,7 @@ active_game = True
 time = 0
 pause = True
 step = False
+step_clicked = False
 
 ###############################################################################
 ################################## MAIN #######################################
@@ -191,7 +198,7 @@ pygame.display.set_caption("Game of life")
 
 
 surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1, MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1])
-panel = draw_side_panel(pause)
+panel = draw_side_panel(pause, step_clicked)
 window.blit(surface, (0, 0))
 window.blit(panel, (0, 840))
 
@@ -221,6 +228,14 @@ while active_game:
                 pause = not pause
             if 560 <= mouse_x <= 700 and 875 <= mouse_y <= 945:
                 step = True
+                step_clicked = True
+        
+        # Step button animation
+        elif event.type == MOUSEBUTTONUP:
+            mouse_x, mouse_y = event.pos
+            if 560 <= mouse_x <= 700 and 875 <= mouse_y <= 945:
+                step_clicked = False
+
 
     # Update the game continuously
     if not pause:
@@ -240,7 +255,7 @@ while active_game:
     window.blit(surface, (0, 0))
 
     # Update the panel surface
-    panel = draw_side_panel(pause)
+    panel = draw_side_panel(pause, step_clicked)
     window.blit(panel, (0, 840))
 
     pygame.display.flip()
