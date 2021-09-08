@@ -267,6 +267,14 @@ while active_game:
                0 <= mouse_y <= GRID_DIMENSIONS[1] and \
                event.button == LEFT_CLICK:
                 modifying_cells = True
+                l, c = xy_to_square(mouse_x, mouse_y, cell_width, dx, dy, nb_cells)
+                l_previous = l
+                c_previous = c
+                clicked_cell = grid[c][l]
+                if clicked_cell.current_state == DEAD:
+                    clicked_cell.current_state = ALIVE
+                elif clicked_cell.current_state == ALIVE:
+                    clicked_cell.current_state = DEAD
                 
         if modifying_cells and event.type == MOUSEMOTION:
             mouse_x, mouse_y = event.pos
