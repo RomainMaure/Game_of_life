@@ -46,7 +46,7 @@ def draw_grid(n, grid):
             if grid[x][y].current_state == ALIVE:
                 surf.blit(cell_surf, (dx + x*cell_width + 1, dy + y*cell_width + 1))
 
-    return surf
+    return cell_width, dx, dy, surf
 
 
 def draw_rounded_rectangle(width, height, color, radius):
@@ -155,6 +155,37 @@ def update_step(grid):
 
     return grid
 
+
+def xy_to_square(x, y, cell_width, dx, dy, n):
+    """
+    Given the x, y position of the clicked cell, compute the line and column
+    indices of the cell with respect to the grid
+    """
+
+    # Line and column indices of the clicked cell
+    l_cell = (y - dy) // cell_width
+    c_cell = (x - dx) // cell_width
+
+    # In case the player click outside the grid
+    if l_cell < 0:
+        l_cell = 0
+    if c_cell < 0:
+        c_cell = 0
+    if l_cell > n - 1:
+        l_cell = n - 1
+    if c_cell > n - 1:
+        c_cell = n - 1
+
+    # Line and column indices of the cell at the center of the grid
+    l_center = (CENTRAL_POS - dy) // cell_width
+    c_center = (CENTRAL_POS - dx) // cell_width
+
+    # The real coordinates of the cell in the grid (correction of the zoom)
+    l = int(CENTRAL_SQUARE + l_cell - l_center)
+    c = int(CENTRAL_SQUARE + c_cell - c_center)
+
+    return l, c
+
 ###############################################################################
 ############################### GLOBAL VARIABLES ##############################
 ###############################################################################
@@ -174,13 +205,13 @@ MID_SIZE_GRID = MAX_SIZE_GRID // 2
 NEIGHBORS = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1)]
 UNDERPOPULATION, OVERPOPULATION, REPRODUCTION = 2, 3, 3
 UPDATE_TIME = 500
+CENTRAL_POS = GRID_DIMENSIONS[0] / 2
+CENTRAL_SQUARE = MAX_SIZE_GRID // 2
+LEFT_CLICK = 1
 FPS = 100
 
 nb_cells = 25
 grid = np.array([[Cell(DEAD, DEAD) for x in range(MAX_SIZE_GRID)] for y in range(MAX_SIZE_GRID)])
-grid[72][72].current_state = ALIVE
-grid[72][73].current_state = ALIVE
-grid[72][74].current_state = ALIVE
 active_game = True
 time = 0
 pause = True
@@ -197,7 +228,7 @@ window = pygame.display.set_mode(DIMENSIONS)
 pygame.display.set_caption("Game of life")
 
 
-surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1, MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1])
+cell_width, dx, dy, surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1, MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1])
 panel = draw_side_panel(pause, step_clicked)
 window.blit(surface, (0, 0))
 window.blit(panel, (0, 840))
@@ -222,6 +253,7 @@ while active_game:
                 nb_cells += 2
 
         # Play, Pause, Step buttons
+        # Add / remove a cell
         elif event.type == MOUSEBUTTONDOWN:
             mouse_x, mouse_y = event.pos
             if 175 <= mouse_x <= 245 and 875 <= mouse_y <= 945:
@@ -229,6 +261,15 @@ while active_game:
             if 560 <= mouse_x <= 700 and 875 <= mouse_y <= 945:
                 step = True
                 step_clicked = True
+            if 0 <= mouse_x <= GRID_DIMENSIONS[0] and \
+               0 <= mouse_y <= GRID_DIMENSIONS[1] and \
+               event.button == LEFT_CLICK:
+                l, c = xy_to_square(mouse_x, mouse_y, cell_width, dx, dy, nb_cells)
+                clicked_cell = grid[c][l]
+                if clicked_cell.current_state == DEAD:
+                    clicked_cell.current_state = ALIVE
+                elif clicked_cell.current_state == ALIVE:
+                    clicked_cell.current_state = DEAD
         
         # Step button animation
         elif event.type == MOUSEBUTTONUP:
@@ -251,7 +292,7 @@ while active_game:
 
     # Update the grid surface
     nb_cells_to_show = nb_cells//2
-    surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1, MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1])
+    cell_width, dx, dy, surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1, MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1])
     window.blit(surface, (0, 0))
 
     # Update the panel surface
