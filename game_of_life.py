@@ -217,6 +217,8 @@ time = 0
 pause = True
 step = False
 step_clicked = False
+modifying_cells = False
+l_previous, c_previous = 0, 0
 
 ###############################################################################
 ################################## MAIN #######################################
@@ -264,12 +266,22 @@ while active_game:
             if 0 <= mouse_x <= GRID_DIMENSIONS[0] and \
                0 <= mouse_y <= GRID_DIMENSIONS[1] and \
                event.button == LEFT_CLICK:
-                l, c = xy_to_square(mouse_x, mouse_y, cell_width, dx, dy, nb_cells)
+                modifying_cells = True
+                
+        if modifying_cells and event.type == MOUSEMOTION:
+            mouse_x, mouse_y = event.pos
+            l, c = xy_to_square(mouse_x, mouse_y, cell_width, dx, dy, nb_cells)
+            if l != l_previous or c != c_previous:
+                l_previous = l
+                c_previous = c
                 clicked_cell = grid[c][l]
                 if clicked_cell.current_state == DEAD:
                     clicked_cell.current_state = ALIVE
                 elif clicked_cell.current_state == ALIVE:
                     clicked_cell.current_state = DEAD
+
+        if event.type == MOUSEBUTTONUP and event.button == LEFT_CLICK:
+            modifying_cells = False
         
         # Step button animation
         elif event.type == MOUSEBUTTONUP:
