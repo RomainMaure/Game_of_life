@@ -31,20 +31,20 @@ def draw_grid(n, grid):
 
     for pixel_x in range(dx + cell_width, dx + n*cell_width, cell_width):
         for pixel_y in range(dy, dy + n*cell_width):
-            surf.set_at((pixel_x, pixel_y), DARK)
+            surf.set_at((pixel_x, pixel_y), GREY)
 
     for pixel_y in range(dy + cell_width, dy + n*cell_width, cell_width):
         for pixel_x in range(dx, dx + n*cell_width):
-            surf.set_at((pixel_x, pixel_y), DARK)
+            surf.set_at((pixel_x, pixel_y), GREY)
 
     # Living cells
-    cell_surf = pygame.Surface((cell_width, cell_width))
+    cell_surf = pygame.Surface((cell_width - 1, cell_width - 1))
     cell_surf.fill(DARK)
 
     for x in range(n):
         for y in range(n):
             if grid[x][y].current_state == ALIVE:
-                surf.blit(cell_surf, (dx + x*cell_width, dy + y*cell_width))
+                surf.blit(cell_surf, (dx + x*cell_width + 1, dy + y*cell_width + 1))
 
     return surf
 
@@ -91,7 +91,7 @@ def pause_symbol():
     return surf
 
 
-def draw_side_panel(symbol):
+def draw_side_panel(pause):
     """
     Draw the control panel
     """
@@ -101,9 +101,9 @@ def draw_side_panel(symbol):
     surf.fill(WHITE)
 
     # Play / Pause symbol
-    if symbol == PLAY:
+    if pause:
         surf.blit(play_symbol(), (175, 35))
-    elif symbol == PAUSE:
+    else:
         surf.blit(pause_symbol(), (175, 35))
 
     # Step button
@@ -168,7 +168,6 @@ MID_SIZE_GRID = MAX_SIZE_GRID // 2
 NEIGHBORS = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1)]
 UNDERPOPULATION, OVERPOPULATION, REPRODUCTION = 2, 3, 3
 UPDATE_TIME = 500
-PLAY, PAUSE = 0, 1
 FPS = 100
 
 nb_cells = 25
@@ -178,6 +177,8 @@ grid[72][73].current_state = ALIVE
 grid[72][74].current_state = ALIVE
 active_game = True
 time = 0
+pause = True
+step = False
 
 ###############################################################################
 ################################## MAIN #######################################
@@ -190,7 +191,7 @@ pygame.display.set_caption("Game of life")
 
 
 surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1, MID_SIZE_GRID - nb_cells//2:MID_SIZE_GRID + nb_cells//2 + 1])
-panel = draw_side_panel(PLAY)
+panel = draw_side_panel(pause)
 window.blit(surface, (0, 0))
 window.blit(panel, (0, 840))
 
@@ -201,23 +202,46 @@ while active_game:
     clock.tick(FPS)
 
     for event in pygame.event.get():
+
+        # Quit button
         if event.type == QUIT:
             active_game = False
+
+        # Mouse wheel zoom in / out
         elif event.type == MOUSEWHEEL:
             if event.y == SCROLL_UP and nb_cells > MIN_SIZE_GRID:
                 nb_cells -= 2
             elif event.y == SCROLL_DOWN and nb_cells < MAX_SIZE_GRID:
                 nb_cells += 2
 
-    time += clock.get_time()
-    if time > UPDATE_TIME:
-        time = 0
+        # Play, Pause, Step buttons
+        elif event.type == MOUSEBUTTONDOWN:
+            mouse_x, mouse_y = event.pos
+            if 175 <= mouse_x <= 245 and 875 <= mouse_y <= 945:
+                pause = not pause
+            if 560 <= mouse_x <= 700 and 875 <= mouse_y <= 945:
+                step = True
+
+    # Update the game continuously
+    if not pause:
+        time += clock.get_time()
+        if time > UPDATE_TIME:
+            time = 0
+            grid = update_step(grid)
+
+    # Update the game by one iteration only
+    elif step:
+        step = False
         grid = update_step(grid)
 
+    # Update the grid surface
     nb_cells_to_show = nb_cells//2
-
     surface = draw_grid(nb_cells, grid[MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1, MID_SIZE_GRID - nb_cells_to_show:MID_SIZE_GRID + nb_cells_to_show + 1])
     window.blit(surface, (0, 0))
+
+    # Update the panel surface
+    panel = draw_side_panel(pause)
+    window.blit(panel, (0, 840))
 
     pygame.display.flip()
 
