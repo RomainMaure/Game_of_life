@@ -292,7 +292,7 @@ while active_game:
             modifying_cells = False
         
         # Step button animation
-        elif event.type == MOUSEBUTTONUP:
+        if event.type == MOUSEBUTTONUP:
             mouse_x, mouse_y = event.pos
             if 560 <= mouse_x <= 700 and 875 <= mouse_y <= 945:
                 step_clicked = False
