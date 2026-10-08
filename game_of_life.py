@@ -107,7 +107,7 @@ def draw_side_panel(pause, step_clicked):
         surf.blit(pause_symbol(), (175, 35))
 
     # Step button
-    fnt = pygame.font.Font(None, 70, bold=True)
+    fnt = pygame.font.Font(None, 70)
     text = fnt.render("step", True, WHITE)
 
     if step_clicked:
